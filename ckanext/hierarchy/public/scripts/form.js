@@ -37,8 +37,8 @@ $(document).ready(function(){
             $('.js-expand').show();
         }
 
-        var count_str = $('.search-form h1').text();
+        var count_str = $('.number-of-results').text();
         var replaced = count_str.replace(/\d+/g, count);
-        $('.search-form h1').text(replaced);
+        $('.number-of-results').text(replaced);
     })
 });
