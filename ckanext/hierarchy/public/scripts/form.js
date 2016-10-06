@@ -15,19 +15,29 @@ $(document).ready(function(){
         if (search_str.length != 0){
             $('.js-collapse, .js-expand').hide();
             $('.js-collapsed').show();
+            $('span.highlight').contents().unwrap();
             var organizations = $('.organization-row');
             organizations.hide();
             var count = 0;
+
             organizations.filter(function(index, element){
                 return element.textContent.toLowerCase().indexOf(search_str) >= 0
             }).each(function(index, element){
                 var text = $(element).find('a').get(0).textContent;
                 var str_index = text.toLowerCase().indexOf(search_str);
-                if ( str_index >= 0){
+
+                if (str_index >= 0){
                     count++;
                     $(this).find('a').html(text.substr(0, str_index) + '<span class="highlight">' + text.substr(str_index, search_str.length) + '</span>' + text.substr(str_index + search_str.length))[0];
                 }
+
+                // show direct parent nodes, too
+                $(element).parents('.organization').each(function(index, element) {
+                    $(element).show().children().not('.btn-collapse').show();
+                });
+
             }).show();
+
         }
         else{
             count = $('.organization-row').length;
