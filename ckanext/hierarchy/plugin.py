@@ -55,8 +55,9 @@ class HierarchyForm(p.SingletonPlugin, DefaultOrganizationForm):
 
             org_parents_objs = organization.get_parent_group_hierarchy(type='organization')
             org_parents_titles = [getattr(org, 'title') for org in org_parents_objs]
-            org_parents_titles.append(result_dict.get('title'))  
+            org_parents_titles.append(result_dict.get('title'))
             result_dict['hierarchy'] = ' > '.join(org_parents_titles)
             organization_list.append(result_dict)
 
-        c.allowable_parents_hierarchy = sorted(organization_list)
+        organization_list.sort()
+        c.allowable_parents_hierarchy = organization_list
