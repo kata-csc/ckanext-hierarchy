@@ -59,4 +59,4 @@ class HierarchyForm(p.SingletonPlugin, DefaultOrganizationForm):
             result_dict['hierarchy'] = ' > '.join(org_parents_titles)
             organization_list.append(result_dict)
 
-        c.allowable_parents_hierarchy = organization_list
+        c.allowable_parents_hierarchy = sorted(organization_list)
