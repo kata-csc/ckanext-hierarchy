@@ -9,14 +9,14 @@ Displays a tree of organzations
     {% if show_dataset_count == false or (show_dataset_count == true and node.dataset_count != 0 ) %}
     <li id="node_{{ node.name }}" class="organization">
         {% if node.children %}
-        <button class="js-expand btn btn-primary btn-xs"><i class="icon-plus"></i></button>
-        <button class="js-collapse btn btn-gray btn-xs"><i class="icon-minus"></i></button>
+        <span class="js-expand btn-collapse btn-expand"><i class="icon-angle-down"></i></span>
+        <span class="js-collapse btn-collapse btn-collapse"><i class="icon-angle-up"></i></span>
         {% endif %}
         <div class="organization-row">
             {% if show_dataset_count == true %}
             <span class="badge">{{ node.dataset_count }}</span>&nbsp;
             {% endif %}
-            <a href="{{ url_prefix }}{{ node.name }}">{{ h.extra_translation(node, 'title') or node.name }}</a>
+            <a href="{{ url_prefix }}{{ node.name }}">{{ h.extra_translation(node, 'title') or node.title }}</a>
         </div>
         {% if node.children %}
         <ul class="no-bullet organization-subtree js-collapsed"> {{ loop(node.children) }} </ul>
