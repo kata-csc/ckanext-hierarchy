@@ -14,7 +14,6 @@
 		- ckanapi
 '''
 
-# import unicodecsv as csv
 import csv
 import logging
 import sys
@@ -26,7 +25,7 @@ from ckanapi import RemoteCKAN, NotAuthorized, ValidationError
 # set up logging to both file and stdout
 log = logging.getLogger()
 
-# Suppress some urllib3 warnings
+# suppress some urllib3 warnings
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -34,7 +33,7 @@ logging.getLogger('urllib3').setLevel(logging.WARNING)
 logging.getLogger("requests").setLevel(logging.WARNING)
 
 # setup basic logging
-fmt = '[%(asctime)s] %(message)s'
+fmt = '[%(asctime)s] [%(levelname)s] %(message)s'
 logging.basicConfig(filename='orgparser.log', level=logging.DEBUG, format=fmt)
 
 # log info to stdout
@@ -79,7 +78,7 @@ def parse_csv(ckan, input_files):
 						parent = root_orgs.get(row['code'], None)
 						create_organization(ckan, organization_code, slug_str, row['sub_name'], description, parent=parent)
 		except IOError:
-			log.debug('File {} could not be found.'.format(csvfile))
+			log.warning('File {} could not be found.'.format(csvfile))
 
 def govern(row):
 	'''
@@ -89,7 +88,7 @@ def govern(row):
 	if all(row[i] for i in required_keys):
 		return True
 	else:
-		log.debug('Missing fields. Skipping row {}'.format(row))
+		log.warning('Missing fields. Skipping row {}'.format(row))
 		return False
 
 def create_organization(ckan, id_str, slug_str, name, desc, parent=None):
@@ -129,10 +128,9 @@ def delete_organizations(ckan):
 			ckan.call_action('organization_delete', {'id': org['name']}, requests_kwargs={'verify': False})
 			log.info('Successfully deleted organization {}'.format(org['name']))
 		else:
-			log.info('Organization {} is not deleted - associated datasets exist'.format(org))
+			log.warning('Organization {} was not deleted - associated datasets exist'.format(org))
 
 def main():
-
 	parser = argparse.ArgumentParser()
 	parser.add_argument('command', choices=['parse', 'list', 'delete'],
 		help='[parse] create an organization hierarchy from csv(s). \
