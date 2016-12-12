@@ -185,7 +185,7 @@ def main():
 		else:
 			sys.exit(1)
 
-	if cmd == 'list':
+	elif cmd == 'list':
 		log.info('>> Fetching organizations. This might take a few seconds.')
 		orgs = get_organizations(ckan)
 		log.info('>> Organizations found in database:')
@@ -193,8 +193,15 @@ def main():
 			log.info(org)
 		log.info('>> Found a total of {} organizations'.format(len(orgs)))
 
-	if cmd == 'parse':
+	elif cmd == 'parse':
 		parse_csv(ckan, input_files)
+
+	else:
+		print('Usage: python parser.py parse | list | delete')
+		print('    parse    Creates an organization hierarchy')
+		print('             based on parsed csv rows.')
+		print('    list     List all organizations in ckan db')
+		print('    delete   Delete all empty organizations from ckan db')
 
 if __name__ == '__main__':
 	main()
