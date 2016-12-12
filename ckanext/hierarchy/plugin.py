@@ -23,6 +23,7 @@ class HierarchyDisplay(p.SingletonPlugin):
 
     def get_actions(self):
         return {'group_tree': action.group_tree,
+                'group_tree_cached': action.group_tree_cached,
                 'group_tree_section': action.group_tree_section,
                 }
 

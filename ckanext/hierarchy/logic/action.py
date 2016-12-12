@@ -3,6 +3,7 @@ import ckan.plugins as p
 import ckan.logic as logic
 from ckanext.hierarchy.model import GroupTreeNode
 from ckan import model
+from pylons.decorators.cache import beaker_cache
 from sqlalchemy import func, and_
 from sqlalchemy.orm import aliased
 
@@ -110,6 +111,11 @@ def group_tree(context, data_dict):
     result = [_group_tree_branch(group, children=children.get(group.id, []))
               for group in sorted_top_level_groups]
     return result
+
+
+@beaker_cache(type="dbm", expire=86400)
+def group_tree_cached(context, data_dict):
+    return group_tree(context, data_dict)
 
 
 @logic.side_effect_free
