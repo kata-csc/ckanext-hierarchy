@@ -1,14 +1,16 @@
 '''
 	A script that parses csv files and exports the rows as hierarchical ckan organizations.
 
-	Usage: python parser.py -k 12345678-b123-a123-12345-abc1235asd -i example.csv -c https://10.10.10.10 parse
-	For multiple files, repeate -i parameter. i.e. '...asd -i file1.csv -i file2.csv ...'
+	Usage: python parser.py parse
+	Edit the settings in settings.ini before running.
 
-	The csv rows are required to have at least 5 fields in the following order:
-	vuosi; korkeakoulu; korkeakoulu_koodi; (paayksikko_koodi); alayksikko_koodi; alayksikko_nimi
-	field 'paayksikko_koodi' is currently ignored and can be left blank.
+	The first row in a csv file defines the keys that are used to parse the
+	organizations.
 
-	First csv row is assumed to be the header and is always ignored.
+	The following keys are accepted as row headers. Separate rows with semi-colons:
+	year;org_name;org_code;unit_main_code;unit_sub_code;unit_name;;;;;;;;;;;;;;
+	unit_main_code can be left blank, other fields are required.
+
 	Requires the following Python packages ('pip install -r requirements.txt')
 		- slugify
 		- ckanapi
@@ -17,10 +19,14 @@
 import csv
 import logging
 import sys
-import argparse
+import ConfigParser
 
 from slugify import slugify
-from ckanapi import RemoteCKAN, NotAuthorized, ValidationError
+from ckanapi import RemoteCKAN, NotAuthorized, ValidationError, NotFound
+
+# setup config
+config = ConfigParser.RawConfigParser()
+config.read('settings.ini')
 
 # set up logging to both file and stdout
 log = logging.getLogger()
@@ -33,15 +39,14 @@ logging.getLogger('urllib3').setLevel(logging.WARNING)
 logging.getLogger("requests").setLevel(logging.WARNING)
 
 # setup basic logging
-fmt = '[%(asctime)s] [%(levelname)s] %(message)s'
-logging.basicConfig(filename='orgparser.log', level=logging.DEBUG, format=fmt)
+fmt = '[%(asctime)s] [%(levelname)s] [%(funcName)s] %(message)s'
+logging.basicConfig(filename=config.get('general', 'logfile'), level=logging.DEBUG, format=fmt)
 
 # log info to stdout
 log_stdout = logging.StreamHandler()
 log_stdout.setFormatter(logging.Formatter(fmt))
+log_stdout.setLevel(logging.INFO)
 logging.getLogger().addHandler(log_stdout)
-
-FIELDS = ['year', 'name', 'code', 'unit_code', 'sub_code', 'sub_name']
 
 def parse_csv(ckan, input_files):
 	root_orgs = {}
@@ -56,27 +61,38 @@ def parse_csv(ckan, input_files):
 		log.info('Now parsing file {}'.format(csvfile))
 		try:
 			with open(csvfile, 'rb') as csv_file:
-				csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=FIELDS)
+				csv_reader = csv.DictReader(csv_file, delimiter=';')
 				d = next(csv_reader, None)	# skip the 1st row
 				for row in csv_reader:
+					# parse fields in a single row
+					org_name = row.get('org_name', '')
+					org_code = row.get('org_code', '')
+					unit_main_code = row.get('unit_main_code', '')
+					unit_sub_code = row.get('unit_sub_code', '')
+					unit_name = row.get('unit_name', '')
+
 					# progress counter
 					line_counter += 1
 					percentage = (float(line_counter)/float(num_lines)*100)
-					log.info("[{}/{} {:.2g}%] {}"
-						.format(line_counter, num_lines, percentage, row['name']))
+					log.info("[{}/{} {:.2g}%] {} - {}"
+						.format(line_counter, num_lines, percentage, org_name, unit_name))
 
 					if govern(row):
 						# save parent ids to parent_organizations dict
-						if not row['code'] in root_orgs:
-							root_orgs[row['code']] = create_organization(
-								ckan, row['code'], row['name'], row['name'], "A Root-level organization")
+						# and create a root level organization
+						if not org_code in root_orgs:
+							slug_str = "-".join([org_code, org_name])
+							root_orgs[org_code] = create_organization(ckan, org_code, slug_str, org_name)
 
-						# otherwise append to hierarchy
-						organization_code = '-'.join([row['code'], row['sub_code']])
-						description = '{} - {} Organization code: '.format(row['name'], row['sub_name']) + organization_code
-						slug_str = row['name'] + '-' + row['sub_name']
-						parent = root_orgs.get(row['code'], None)
-						create_organization(ckan, organization_code, slug_str, row['sub_name'], description, parent=parent)
+						# otherwise create an org and append it to existing root's hierarchy
+						if unit_sub_code:
+							if not unit_name:
+								unit_name = unit_sub_code
+							
+							organization_code = '-'.join([org_code, unit_sub_code])		# Unique
+							slug_str = '-'.join([organization_code, org_name, unit_name])
+							parent = root_orgs.get(org_code, None)
+							create_organization(ckan, organization_code, slug_str, unit_name, parent=parent)
 		except IOError:
 			log.warning('File {} could not be found.'.format(csvfile))
 
@@ -84,33 +100,45 @@ def govern(row):
 	'''
 		returns false, if the row does not contain necessary fields.
 	'''
-	required_keys = ['name', 'code', 'sub_code', 'sub_name']
+	required_keys = ['org_name', 'org_code', 'unit_sub_code', 'unit_name']
 	if all(row[i] for i in required_keys):
 		return True
 	else:
 		log.warning('Missing fields. Skipping row {}'.format(row))
 		return False
 
-def create_organization(ckan, id_str, slug_str, name, desc, parent=None):
-	slug = slugify(id_str).lower()[:100]  # field max length is 100 characters
-	data_dict = {'name': slug, 'id': slug,  'title': name, 'description': desc, 'state': 'active'}
-	log.debug('>> Creating organization {} [ID: {}]'.format(name, id_str))
+def create_organization(ckan, id_str, slug_str, name, desc=None, parent=None):
+	name_slug = slugify(slug_str).lower()[:100]  # field max length is 100 characters
+	id_slug = slugify(id_str).lower()[:100]
+	data_dict = {'name': name_slug, 'id': id_slug,  'title': name, 'state': 'active'}
+	if desc:
+		data_dict['description'] = desc
+
+	log.debug('>> Creating organization {} [ID: {}]'.format(name, id_slug))
+
+	if parent:
+		# Add to hierarchy, if a parent ID is given
+		# This happens by adding a parent capacity to groups field
+		log.debug('Adding to hierarchy, under parent ID {}.'.format(parent))
+		data_dict['groups'] = [{'capacity': 'public', 'name': parent}]
+
 	try:
+		# Try to create the organization, if it doesn't exist yet
 		ckan.call_action('organization_create', data_dict, requests_kwargs={'verify': False})
 		log.debug('Organization created.')
+
 	except ValidationError as e:
-		log.debug('Organization with same ID was found from the database. Updating instead.'.format(name, slug, id_str))
-		ckan.call_action('organization_patch', data_dict, requests_kwargs={'verify': False})
+		# If it already exists, just patch the new data
+		log.debug('Organization with same ID was found from the database. Updating instead.'.format(name, name_slug, id_slug))
+		try:
+			ckan.call_action('organization_patch', data_dict, requests_kwargs={'verify': False})
+		except NotFound:
+			log.error("Could not patch organization {}, {}, {}".format(name, name_slug, id_slug))
 		log.debug('Organization updated.')
+
 	except NotAuthorized:
 		log.error('API NotAuhtorized - please give a valid admin API key')
 		sys.exit(1)
-
-	if parent:
-		log.debug('Adding to hierarchy. Parent ID: {}'.format(parent))
-		data_dict = {'id': slug, 'groups':[{'capacity': 'public', 'name': parent}]}
-		groups = ckan.call_action('organization_patch', data_dict, requests_kwargs={'verify': False})
-		log.debug('Organization added to hierarchy.'.format(parent, slug))
 
 	return id_str
 
@@ -118,49 +146,55 @@ def get_organizations(ckan, extra_dict=None):
 	groups = ckan.call_action('organization_list', extra_dict, requests_kwargs={'verify': False})
 	return groups
 
-def delete_organizations(ckan):
+def delete_organizations(ckan, purge=False):
 	orgs = get_organizations(ckan, {'all_fields':True})
 	log.info('Deleting {} organizations.'.format(len(orgs)))
 	for org in orgs:
 		if org['package_count'] == 0:
 			# organization_purge purges data from database
 			# organization_delete only hides the organizations (state: deleted)
-			ckan.call_action('organization_delete', {'id': org['name']}, requests_kwargs={'verify': False})
+			action = 'organization_delete'
+			if purge:
+				action = 'organization_purge'
+			ckan.call_action(action, {'id': org['name']}, requests_kwargs={'verify': False})
+
 			log.info('Successfully deleted organization {}'.format(org['name']))
 		else:
-			log.warning('Organization {} was not deleted - associated datasets exist'.format(org))
+			log.warning('Organization {} has {} associated datasets and was not deleted.'.format(org['name'], org['package_count']))
 
 def main():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('command', choices=['parse', 'list', 'delete'],
-		help='[parse] create an organization hierarchy from csv(s). \
-		[list] list all organizations. [delete] delete all organizations.')
-	parser.add_argument('-k', '--api-key',
-		required=True, help='Admin API key for CKAN')
-	parser.add_argument('-i', '--input', action='append',
-		required=True, help='Input file(s) in CSV format. Add multiple files by repeating the argument (-i)')
-	parser.add_argument('-c', '--ckan-host', default="https://10.10.10.42",
-		help='CKAN host (i.e. https://10.10.10.10)')
+	# read arguments and config
+	cmd = sys.argv[1]
 
-	args = parser.parse_args()
-	ckan = RemoteCKAN(args.ckan_host, apikey=args.api_key)
+	ckan_host = config.get('general', 'ckan_host')
+	api_key = config.get('general', 'api_key')
+	input_files = map(str.strip, config.get('general', 'input_files').split(','))
+	purge_on_delete = config.getboolean('general', 'purge_on_delete')
 
-	if args.command == 'delete':
+	# initialize ckanapi instance
+	ckan = RemoteCKAN(ckan_host, apikey=api_key)
+
+	# command logic
+	if cmd == 'delete':
+		if purge_on_delete:
+			print('>> Organizations will be purged from the database (settings.ini -> purge_on_delete = True)!')
 		confirmation = raw_input('>> Are you sure you want to DELETE ALL EMPTY organizations? (y/n)\n>> ')
 		if confirmation.lower() in ['y', 'yes']:
 			print('Deleting organizations. This might take a few seconds.')
-			delete_organizations(ckan)
+			delete_organizations(ckan, purge_on_delete)
 		else:
 			sys.exit(1)
-	if args.command == 'list':
+
+	if cmd == 'list':
 		log.info('>> Fetching organizations. This might take a few seconds.')
 		orgs = get_organizations(ckan)
 		log.info('>> Organizations found in database:')
 		for org in orgs:
 			log.info(org)
 		log.info('>> Found a total of {} organizations'.format(len(orgs)))
-	if args.command == 'parse':
-		parse_csv(ckan, args.input)
+
+	if cmd == 'parse':
+		parse_csv(ckan, input_files)
 
 if __name__ == '__main__':
 	main()

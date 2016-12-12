@@ -1,4 +1,4 @@
-vuosi;Korkeakoulu;korkeakoulu_koodi;Pääyksikkö_koodi;Alayksikkö_koodi;Alayksikkön nimi;max 100 %;Kasvatusalat (1);Taiteet ja kulttuurialat (2);Humanistiset alat (3);Yhteiskunnalliset alat (4);Kauppa, hallinto ja oikeustieteet (5);Luonnontieteet (6);Tietojenkäsittely ja tietoliikenne (7);Tekniikan alat (8);Maa- ja metsätalousalat (9);Lääketieteet (10);Terveys- ja hyvinvointialat (11);Palvelualat (12)
+year;org_name;org_code;unit_main_code;unit_sub_code;unit_name;;;;;;;;;;;;;;
 2016;Testi-yliopisto;12345;;00001;Hiukkaskiihdytysdivisioona;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%
 2016;Testi-yliopisto;12345;;00002;Rakettitiedejaos;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%
 2016;Testi-yliopisto;12345;;00003;Ytterbium-kerho;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%;0%
