@@ -22,7 +22,7 @@
   {% endblock %}
   
   {% block title %}
-    {% set organization_display_name = h.extra_translation(organization, 'title') or organization.name %}
+    {% set organization_display_name = organization.name %}
     <a href="{{ url }}" title="{{ _('View {organization_name}').format(organization_name=organization_display_name) }}" class="">
         <h4>{{ organization_display_name }}</h4>
     </a>

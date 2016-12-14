@@ -6,7 +6,7 @@ Displays a tree of organzations
 {% resource 'hierarchy/form.js' %}
 <ul class="no-bullet organization-tree" data-organization-tree>
     {% for node in top_nodes recursive %}
-    {% if show_dataset_count == false or (show_dataset_count == true and node.dataset_count != 0 ) %}
+    {# {% if show_dataset_count == false or (show_dataset_count == true and node.dataset_count != 0 ) %} #}
     <li id="node_{{ node.name }}" class="organization">
         {% if node.children %}
         <span class="js-expand btn-collapse btn-expand"><i class="icon-angle-down"></i></span>
@@ -16,11 +16,11 @@ Displays a tree of organzations
             {% if show_dataset_count == true %}
             <span class="badge">{{ node.dataset_count }}</span>&nbsp;
             {% endif %}
-            <a href="{{ url_prefix }}{{ node.name }}">{{ h.extra_translation(node, 'title') or node.title }}</a>
+            <a href="{{ url_prefix }}{{ node.name }}">{{ node.title }}</a>
         </div>
         {% if node.children %}
         <ul class="no-bullet organization-subtree js-collapsed"> {{ loop(node.children) }} </ul>
-        {% endif %}
+        {# {% endif %} #}
     </li>
     {% endif %}
     {% endfor %}
