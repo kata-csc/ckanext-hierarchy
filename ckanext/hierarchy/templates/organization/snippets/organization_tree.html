@@ -1,11 +1,23 @@
-{#
+{#  
 Displays a tree of organzations
 #}
 {% set show_dataset_count = show_dataset_count or false %}
 {% set url_prefix = h.url_for(controller='organization', action='read', id='') %}
+
+{% set sort_reverse = False %}
+{% set sort_attr = 'title' %}
+
+{% if c.sort_by_selected %}
+    {% if c.sort_by_selected == 'package_count' %}
+        {% set sort_reverse = True %}
+        {% set sort_attr = 'dataset_count' %}
+    {% endif %}
+{% endif %}
+
 {% resource 'hierarchy/form.js' %}
 <ul class="no-bullet organization-tree" data-organization-tree>
-    {% for node in top_nodes recursive %}
+    {% set top_nodes_sorted = top_nodes | sort(reverse=sort_reverse, attribute=sort_attr) %}
+    {% for node in top_nodes_sorted recursive %}
     {# {% if show_dataset_count == false or (show_dataset_count == true and node.dataset_count != 0 ) %} #}
     <li id="node_{{ node.name }}" class="organization">
         {% if node.children %}
@@ -14,12 +26,13 @@ Displays a tree of organzations
         {% endif %}
         <div class="organization-row">
             {% if show_dataset_count == true %}
-            <span class="badge">{{ node.dataset_count }}</span>&nbsp;
+            <span class="badge dataset-count">{{ node.dataset_count }}</span>&nbsp;
             {% endif %}
             <a href="{{ url_prefix }}{{ node.name }}">{{ node.title }}</a>
         </div>
         {% if node.children %}
-        <ul class="no-bullet organization-subtree js-collapsed"> {{ loop(node.children) }} </ul>
+        {% set children_sorted = node.children | sort(reverse=sort_reverse, attribute=sort_attr) %}
+        <ul class="no-bullet organization-subtree js-collapsed"> {{ loop(children_sorted) }} </ul>
         {# {% endif %} #}
     </li>
     {% endif %}
