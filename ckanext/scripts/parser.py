@@ -108,8 +108,8 @@ def govern(row):
 		return False
 
 def create_organization(ckan, id_str, slug_str, name, desc=None, parent=None):
-	name_slug = slugify(slug_str).lower()[:100]  # field max length is 100 characters
-	id_slug = slugify(id_str).lower()[:100]
+	name_slug = slugify(slug_str.decode('utf-8')).lower()[:100]  # field max length is 100 characters
+	id_slug = slugify(id_str.decode('utf-8')).lower()[:100]
 	data_dict = {'name': name_slug, 'id': id_slug,  'title': name, 'state': 'active'}
 	if desc:
 		data_dict['description'] = desc
