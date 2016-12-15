@@ -50,5 +50,19 @@ $(document).ready(function(){
         var count_str = $('.number-of-results').text();
         var replaced = count_str.replace(/\d+/g, count);
         $('.number-of-results').text(replaced);
+
     })
+
+    // Default: Hide organizations without datasets
+    $('.organization-empty').hide();
+
+    $('#show-empty-organizations').click(function() {
+        if ($(this).is(':checked')) {
+          $('.organization-empty').show();
+        }
+        else {
+          $('.organization-empty').hide();          
+        }
+    });
+
 });
