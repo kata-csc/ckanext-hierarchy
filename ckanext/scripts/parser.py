@@ -62,7 +62,6 @@ def parse_csv(ckan, input_files):
 		try:
 			with open(csvfile, 'rb') as csv_file:
 				csv_reader = csv.DictReader(csv_file, delimiter=';')
-				d = next(csv_reader, None)	# skip the 1st row
 				for row in csv_reader:
 					# parse fields in a single row
 					org_name = row.get('org_name', '')
