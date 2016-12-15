@@ -85,10 +85,7 @@ def parse_csv(ckan, input_files):
 							root_orgs[org_code] = create_organization(ckan, org_code, slug_str, org_name)
 
 						# otherwise create an org and append it to existing root's hierarchy
-						if unit_sub_code:
-							if not unit_name:
-								unit_name = unit_sub_code
-							
+						if unit_sub_code and unit_name:
 							organization_code = '-'.join([org_code, unit_sub_code])		# Unique
 							slug_str = '-'.join([organization_code, org_name, unit_name])
 							parent = root_orgs.get(org_code, None)
@@ -100,11 +97,15 @@ def govern(row):
 	'''
 		returns false, if the row does not contain necessary fields.
 	'''
-	required_keys = ['org_name', 'org_code', 'unit_sub_code', 'unit_name']
-	if all(row[i] for i in required_keys):
+
+	# root-level organization only
+	if all(row[i] for i in ['org_name', 'org_code']):
+		# check if sub-unit fields are present
+		if not all(row[i] for i in ['unit_sub_code', 'unit_name']):
+			log.warning('Missing unit codes. Creating root organization only: {}'.format(row))
 		return True
 	else:
-		log.warning('Missing fields. Skipping row {}'.format(row))
+		log.warning('Missing root organization fields. Skipping row {}'.format(row))
 		return False
 
 def create_organization(ckan, id_str, slug_str, name, desc=None, parent=None):
