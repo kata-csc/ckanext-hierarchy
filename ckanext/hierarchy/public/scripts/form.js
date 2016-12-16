@@ -1,4 +1,20 @@
 $(document).ready(function(){
+
+    var setOrgCountNumberInPage = function(count) {
+        var count_text = $('.number-of-results').text();
+        var count_str = count.toString();
+        if(count >= 1000) {
+            count_str = count_str.slice(0, 1) + " " + count_str.slice(1);
+        }
+        var replaced = count_text.replace(/\d[\s,]?\d+|\d/g, count_str);
+        $('.number-of-results').text(replaced);
+        if($('.number-of-results').css('visibility') == 'hidden') {
+            $('.number-of-results').css('display', 'none');
+            $('.number-of-results').css('visibility', 'visible');
+            $('.number-of-results').fadeIn();
+        }
+    }
+
     $('[data-organization-tree] .js-expand').bind('click', function(){
         $(this).siblings('.js-collapse, .js-collapsed').show();
         $(this).hide();
@@ -16,7 +32,7 @@ $(document).ready(function(){
             $('.js-collapse, .js-expand').hide();
             $('.js-collapsed').show();
             $('span.highlight').contents().unwrap();
-            var organizations = $('.organization-row');
+            var organizations = $('li.organization').filter(function() { return $(this).css('display') != 'none'}).find('.organization-row');
             organizations.hide();
             var count = 0;
 
@@ -39,17 +55,14 @@ $(document).ready(function(){
             }).show();
 
         }
-        else{
-            count = $('.organization-row').length;
+        else {
+            count = $('li.organization').filter(function() { return $(this).css('display') != 'none'}).length;
             $('span.highlight').contents().unwrap()
             $('.organization-row').show();
             $('.js-collapsed').hide();
             $('.js-expand').show();
         }
-
-        var count_str = $('.number-of-results').text();
-        var replaced = count_str.replace(/\d+/g, count);
-        $('.number-of-results').text(replaced);
+        setOrgCountNumberInPage(count);
 
     })
 
@@ -57,12 +70,18 @@ $(document).ready(function(){
     $('.organization-empty').hide();
 
     $('#show-empty-organizations').click(function() {
+        $('[data-organization-filter]').val('');
+        $('[data-organization-filter]').trigger('keyup');
         if ($(this).is(':checked')) {
           $('.organization-empty').show();
         }
         else {
-          $('.organization-empty').hide();          
+          $('.organization-empty').hide();
         }
+        var shown_count = $('li.organization').filter(function() { return $(this).css('display') != 'none'}).length;
+        setOrgCountNumberInPage(shown_count);
     });
 
+    var shown_count = $('li.organization').filter(function() { return $(this).css('display') != 'none'}).length;
+    setOrgCountNumberInPage(shown_count);
 });
