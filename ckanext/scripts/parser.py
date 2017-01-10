@@ -48,6 +48,7 @@ log_stdout.setFormatter(logging.Formatter(fmt))
 log_stdout.setLevel(logging.INFO)
 logging.getLogger().addHandler(log_stdout)
 
+
 def parse_csv(ckan, input_files):
 	root_orgs = {}
 
@@ -92,6 +93,7 @@ def parse_csv(ckan, input_files):
 		except IOError:
 			log.warning('File {} could not be found.'.format(csvfile))
 
+
 def govern(row):
 	'''
 		returns false, if the row does not contain necessary fields.
@@ -106,6 +108,7 @@ def govern(row):
 	else:
 		log.warning('Missing root organization fields. Skipping row {}'.format(row))
 		return False
+
 
 def create_organization(ckan, id_str, slug_str, name, desc=None, parent=None):
 	name_slug = slugify(slug_str.decode('utf-8')).lower()[:100]  # field max length is 100 characters
@@ -142,38 +145,56 @@ def create_organization(ckan, id_str, slug_str, name, desc=None, parent=None):
 
 	return id_str
 
+
 def get_organizations(ckan, extra_dict=None):
 	groups = ckan.call_action('organization_list', extra_dict, requests_kwargs={'verify': False})
 	return groups
 
-def delete_organizations(ckan, purge=False):
-	orgs = get_organizations(ckan, {'all_fields':True})
-	log.info('Deleting {} organizations.'.format(len(orgs)))
-	for org in orgs:
-		if org['package_count'] == 0:
-			# organization_purge purges data from database
-			# organization_delete only hides the organizations (state: deleted)
-			action = 'organization_delete'
-			if purge:
-				action = 'organization_purge'
-			ckan.call_action(action, {'id': org['name']}, requests_kwargs={'verify': False})
 
-			log.info('Successfully deleted organization {}'.format(org['name']))
-		else:
-			log.warning('Organization {} has {} associated datasets and was not deleted.'.format(org['name'], org['package_count']))
+def delete_hierarchical(ckan, delete_nonempty=True, purge=False):
+	def walk_and_delete(tree):
+		for node in tree:
+			walk_and_delete(node.get('children'))
+			if (delete_nonempty) or (node.get('dataset_count')) == 0:
+				ckan.call_action(action, {'id': node.get('name')}, requests_kwargs={'verify': False})
+				log.info('Successfully deleted organization {}'.format(node.get('name')))
+			else:
+				log.warning('Associated datasets for hierarchy {} exist. Organization was not deleted.'.format(node.get('name')))
+
+	action = 'organization_delete'
+	if purge:
+		action = 'organization_purge'
+
+	hierarchy = ckan.call_action('group_tree', requests_kwargs={'verify': False})
+	walk_and_delete(hierarchy)
+
 
 def main():
 	# read arguments and config
-	cmd = sys.argv[1]
-
 	ckan_host = config.get('general', 'ckan_host')
 	api_key = config.get('general', 'api_key')
 	input_files = map(str.strip, config.get('general', 'input_files').split(','))
 	purge_on_delete = config.getboolean('general', 'purge_on_delete')
+	delete_nonempty = config.getboolean('general', 'delete_nonempty')
 
 	# initialize ckanapi instance
 	ckan = RemoteCKAN(ckan_host, apikey=api_key)
 
+	def print_help():
+		print('Usage: python parser.py parse | list | delete')
+		print('    parse    Creates an organization hierarchy')
+		print('             based on parsed csv rows.')
+		print('    list     List all organizations in ckan db')
+		print('    delete   Delete all empty organizations from ckan db')
+		print()
+		print('The script settings can be modified in settings.ini')
+
+	cmd = None
+	if len(sys.argv) == 2:
+		cmd = sys.argv[1]
+	else:
+		print_help()
+	
 	# command logic
 	if cmd == 'delete':
 		if purge_on_delete:
@@ -181,7 +202,7 @@ def main():
 		confirmation = raw_input('>> Are you sure you want to DELETE ALL EMPTY organizations? (y/n)\n>> ')
 		if confirmation.lower() in ['y', 'yes']:
 			print('Deleting organizations. This might take a few seconds.')
-			delete_organizations(ckan, purge_on_delete)
+			delete_hierarchical(ckan, delete_nonempty, purge_on_delete)
 		else:
 			sys.exit(1)
 
@@ -197,11 +218,8 @@ def main():
 		parse_csv(ckan, input_files)
 
 	else:
-		print('Usage: python parser.py parse | list | delete')
-		print('    parse    Creates an organization hierarchy')
-		print('             based on parsed csv rows.')
-		print('    list     List all organizations in ckan db')
-		print('    delete   Delete all empty organizations from ckan db')
+		print_help()
+
 
 if __name__ == '__main__':
 	main()
