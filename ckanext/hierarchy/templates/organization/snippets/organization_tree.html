@@ -1,7 +1,9 @@
 {#  
 Displays a tree of organzations
 #}
-{% set show_dataset_count = show_dataset_count or false %}
+
+{% set show_empty = show_empty or False %}
+{% set show_dataset_count = show_dataset_count or False %}
 {% set url_prefix = h.url_for(controller='organization', action='read', id='') %}
 
 {% set sort_reverse = False %}
@@ -19,7 +21,7 @@ Displays a tree of organzations
     {% set top_nodes_sorted = top_nodes | sort(reverse=sort_reverse, attribute=sort_attr) %}
     {% for node in top_nodes_sorted recursive %}
     {# {% if show_dataset_count == false or (show_dataset_count == true and node.dataset_count != 0 ) %} #}
-    <li id="node_{{ node.name }}" class="organization {{'' if node.dataset_count else 'organization-empty'}}">
+    <li id="node_{{ node.name }}" class="organization {{'' if (node.dataset_count or show_empty) else 'organization-empty'}}">
         {% if node.children %}
         <span class="js-expand btn-collapse btn-expand"><i class="icon-angle-down"></i></span>
         <span class="js-collapse btn-collapse btn-collapse"><i class="icon-angle-up"></i></span>
