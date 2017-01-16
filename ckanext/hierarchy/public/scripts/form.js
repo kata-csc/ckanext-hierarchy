@@ -84,4 +84,6 @@ $(document).ready(function(){
 
     var shown_count = $('li.organization').filter(function() { return $(this).css('display') != 'none'}).length;
     setOrgCountNumberInPage(shown_count);
+    $('[data-organization-tree] .js-expand').click();
+    $('[data-organization-tree] .organization-row a').last().css('text-decoration', 'underline');
 });
