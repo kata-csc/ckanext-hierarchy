@@ -117,27 +117,27 @@ def create_organization(ckan, id_str, slug_str, name, desc=None, parent=None):
 	if desc:
 		data_dict['description'] = desc
 
-	log.debug('>> Creating organization {} [ID: {}]'.format(name, id_slug))
+	log.info('>> Creating organization {} [ID: {}]'.format(name, id_slug))
 
 	if parent:
 		# Add to hierarchy, if a parent ID is given
 		# This happens by adding a parent capacity to groups field
-		log.debug('Adding to hierarchy, under parent ID {}.'.format(parent))
+		log.info('Adding to hierarchy, under parent ID {}.'.format(parent))
 		data_dict['groups'] = [{'capacity': 'public', 'name': parent}]
-
+	
 	try:
 		# Try to create the organization, if it doesn't exist yet
 		ckan.call_action('organization_create', data_dict, requests_kwargs={'verify': False})
-		log.debug('Organization created.')
+		log.info('Organization created.')
 
 	except ValidationError as e:
 		# If it already exists, just patch the new data
-		log.debug('Organization with same ID was found from the database. Updating instead.'.format(name, name_slug, id_slug))
+		log.info('Organization with same ID was found from the database. Updating instead.'.format(name, name_slug, id_slug))
 		try:
 			ckan.call_action('organization_patch', data_dict, requests_kwargs={'verify': False})
 		except NotFound:
 			log.error("Could not patch organization {}, {}, {}".format(name, name_slug, id_slug))
-		log.debug('Organization updated.')
+		log.info('Organization updated.')
 
 	except NotAuthorized:
 		log.error('API NotAuhtorized - please give a valid admin API key')
