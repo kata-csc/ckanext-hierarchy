@@ -10,4 +10,4 @@ sed "s/(.*)/curl 'https:\/\/INSERT_HERE_ETSIN_HOST_NAME_WITH_DOTS_REPLACED_BY_BA
 chmod u+x org_update_script.txt
 rm all_ids.txt org_packages.txt org_packages_packages.txt package_ids.txt
 echo "After this script is run, manually go through the org_update_script.txt file and check that there isn't anything that does not belong there and save it. After this, run the file. Make sure package_owner_org_update API works in the target CKAN instance"
-$old_org_id >> old_orgs.txt
+echo $old_org_id >> old_orgs.txt

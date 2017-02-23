@@ -69,7 +69,7 @@ def parse_csv(ckan, input_files):
 					org_code = row.get('org_code', '')
 					unit_main_code = row.get('unit_main_code', '')
 					unit_sub_code = row.get('unit_sub_code', '')
-					unit_name = row.get('unit_name', '')
+					unit_name = row.get('unit_name', '').rstrip()
 
 					# progress counter
 					line_counter += 1
