@@ -59,8 +59,7 @@ $(document).ready(function(){
             count = $('li.organization').filter(function() { return $(this).css('display') != 'none'}).length;
             $('span.highlight').contents().unwrap()
             $('.organization-row').show();
-            $('.js-collapsed').hide();
-            $('.js-expand').show();
+            $('[data-organization-tree] .js-collapse').trigger('click');
         }
         setOrgCountNumberInPage(count);
 
