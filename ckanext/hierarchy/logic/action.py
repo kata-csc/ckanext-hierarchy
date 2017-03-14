@@ -113,7 +113,7 @@ def group_tree(context, data_dict):
     return result
 
 
-@beaker_cache(type="dbm", expire=86400)
+@beaker_cache(key=None, type="dbm", expire=86400)
 def group_tree_cached(context, data_dict):
     return group_tree(context, data_dict)
 
