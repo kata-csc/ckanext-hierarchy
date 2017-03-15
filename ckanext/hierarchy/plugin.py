@@ -1,5 +1,6 @@
 import ckan.plugins as p
 import ckanext.hierarchy.logic.action as action
+from ckanext.hierarchy import helpers
 from ckan.lib.plugins import DefaultOrganizationForm
 
 # This plugin is designed to work only these versions of CKAN
@@ -10,6 +11,7 @@ class HierarchyDisplay(p.SingletonPlugin):
 
     p.implements(p.IConfigurer, inherit=True)
     p.implements(p.IActions, inherit=True)
+    p.implements(p.ITemplateHelpers, inherit=True)
 
     # IConfigurer
 
@@ -22,10 +24,16 @@ class HierarchyDisplay(p.SingletonPlugin):
     # IActions
 
     def get_actions(self):
-        return {'group_tree': action.group_tree,
-                'group_tree_cached': action.group_tree_cached,
-                'group_tree_section': action.group_tree_section,
-                }
+        return {
+            'group_tree': action.group_tree,
+            'group_tree_cached': action.group_tree_cached,
+            'group_tree_section': action.group_tree_section,
+        }
+
+    def get_helpers(self):
+        return {
+            'get_allowable_orgs': helpers.get_allowable_orgs
+        }
 
 
 class HierarchyForm(p.SingletonPlugin, DefaultOrganizationForm):
@@ -51,18 +59,3 @@ class HierarchyForm(p.SingletonPlugin, DefaultOrganizationForm):
                 group.groups_allowed_to_be_its_parent(type='organization')
         else:
             c.allowable_parent_groups = model.Group.all(group_type='organization')
-
-        organization_list = []
-        for organization in c.allowable_parent_groups:
-            result_dict = {}
-            for k in ['id', 'name', 'title']:
-                result_dict[k] = getattr(organization, k)
-
-            org_parents_objs = organization.get_parent_group_hierarchy(type='organization')
-            org_parents_titles = [getattr(org, 'title') for org in org_parents_objs]
-            org_parents_titles.append(result_dict.get('title'))
-            result_dict['hierarchy'] = ' > '.join(org_parents_titles)
-            organization_list.append(result_dict)
-
-        organization_list.sort()
-        c.allowable_parents_hierarchy = organization_list
