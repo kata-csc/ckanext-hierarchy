@@ -6,6 +6,8 @@ from ckan.lib.plugins import DefaultOrganizationForm
 # This plugin is designed to work only these versions of CKAN
 p.toolkit.check_ckan_version(min_version='2.0')
 
+import logging
+log = logging.getLogger(__name__)
 
 class HierarchyDisplay(p.SingletonPlugin):
 
@@ -32,7 +34,8 @@ class HierarchyDisplay(p.SingletonPlugin):
 
     def get_helpers(self):
         return {
-            'get_allowable_orgs': helpers.get_allowable_orgs
+            'get_allowable_orgs': helpers.get_allowable_orgs,
+            'get_hierarchy_string_by_id': helpers.get_hierarchy_string_by_id
         }
 
 
@@ -50,7 +53,6 @@ class HierarchyForm(p.SingletonPlugin, DefaultOrganizationForm):
         return ('organization',)
 
     def setup_template_variables(self, context, data_dict):
-        from pylons import tmpl_context as c
         model = context['model']
         group_id = data_dict.get('id')
         if group_id:
