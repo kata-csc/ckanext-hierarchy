@@ -53,6 +53,8 @@ class HierarchyForm(p.SingletonPlugin, DefaultOrganizationForm):
         return ('organization',)
 
     def setup_template_variables(self, context, data_dict):
+        from pylons import tmpl_context as c
+
         model = context['model']
         group_id = data_dict.get('id')
         if group_id:
